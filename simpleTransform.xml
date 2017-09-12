@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<translations>
+ 
+  <translation>
+    <name>BuildingTag</name>
+    <description>Tag all the ways with construction codes as buildings.</description>
+    <match mode="and" >
+      <tag match_id="ref" k="ConCodigo" v="(.*)" />
+      <tag match_id="levels" k="ConNPisos" v="(.*)" />
+      <notag k="building" v="yes" />
+    </match>
+    <output>
+      <tag k="building" v="yes"/>
+      <tag k="building:levels" from_match="levels" v="{1}"/>
+      <tag k="ref:BOG:ConCodigo" from_match="ref" v="{1}"/>
+    </output>
+  </translation>
+  
+</translations>
+
