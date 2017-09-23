@@ -1,0 +1,3 @@
+osmium
+shapely
+-e git://github.com/rory/openstreetmap-writer#egg=osmwriter
