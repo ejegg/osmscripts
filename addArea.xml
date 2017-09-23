@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<translations>
+  <translation>
+    <name>Add area</name>
+    <match type="way">
+      <tag k="ConCodigo" v=".*"/>
+    </match>
+    <output>
+      <copy-all/>
+      <tag k="area" v="yes"/>
+    </output>
+  </translation>
+</translations>
