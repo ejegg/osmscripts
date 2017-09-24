@@ -1,10 +1,7 @@
 #!/bin/bash
 workdir=$(mktemp -d "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
-# list all the ConCodigo (building code) values that only appear once
-# in a key.value file for osmosis tag-transform
-grep ConCodigo $1 | sort | uniq -u | sed -e "s/.*k='//" -e "s/' v='/./" -e "s/'.*//" > "$workdir/simpleConCodigos"
-# extract the ways with those building codes
-osmosis --rx $1 --tf reject-relations --wkv keyValueListFile="$workdir/simpleConCodigos" --un --wx "$workdir/simpleWays.osm"
-# transform the ways into buildings, keeping the levels and the construction code
-osmosis --rx "$workdir/simpleWays.osm" --tt file=simpleTransform.xml --wx -
+osmosis --rx $1 --tf reject-relations --un --tt addArea.xml --wx "$workdir/norelation.osm"
+cat "$workdir/norelation.osm" | ./invertIds.sed >> "$workdir/positiveparts.osm"
+echo bogosm/merge_ways.py "$workdir/positiveparts.osm" $2
+bogosm/merge_ways.py "$workdir/positiveparts.osm" $2
 #rm -r $workdir
