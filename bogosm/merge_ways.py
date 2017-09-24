@@ -34,6 +34,8 @@ class BogotaMerger:
     node_index = -1
     nodes = {}
     way_index = -1
+    ways = {}
+    relation_index = -1
 
     def merge_building_parts(self, input_file, output_file):
         wm = BogotaReader()
@@ -79,29 +81,50 @@ class BogotaMerger:
         :type shape: shapely.geometry.BaseGeometry
         :type tags: dict
         """
-        node_ids = []
-
-        if hasattr(shape, 'exterior'):
-            coords = shape.exterior.coords
-        elif hasattr(shape, 'boundary') and hasattr(shape.boundary, 'geoms'):
-            first_exterior = shape.boundary.geoms[0]
-            coords = first_exterior.coords
+        if hasattr(shape, 'geoms'):
+            shape = shape.geoms[0]
+        if len(shape.interiors) == 0:
+            # simple case, just write a way
+            self.write_way(xml, shape.exterior.coords, tags)
         else:
-            raise RuntimeError(
-                "Can't deal with shape type {0}".format(
-                    type(shape)
-                ))
+            # need to write a relation
+            exterior_id = self.write_way(xml, shape.exterior.coords, {})
+            members = [['way', exterior_id, 'outer']]
+            for inner in shape.interiors:
+                interior_id = self.write_way(xml, inner.coords, {})
+                members.append(['way', interior_id, 'inner'])
+            xml.relation(
+                self.relation_index,
+                tags,
+                members
+            )
+            self.relation_index -= 1
 
+    def write_way(self, xml, coords, tags):
+        """
+        :type xml: OSMWriter
+        :type coords: float[][]
+        :type tags: dict
+        :return: int
+        """
+        node_ids = []
         for point in coords:
             node_id = self.write_point(xml, point)
             node_ids.append(node_id)
-        xml.way(self.way_index, tags, node_ids)
-        self.way_index -= 1
+        node_ids = self.normalize_node_list(node_ids)
+        key = ','.join(str(nid) for nid in node_ids)
+        if key not in self.ways:
+            xml.way(self.way_index, tags, node_ids)
+            self.ways[key] = self.way_index
+            self.way_index -= 1
+        return self.ways[key]
 
     def write_point(self, xml, point):
-        """ Write a point as an OSM node, avoiding duplication
+        """
+        Write a point as an OSM node, avoiding duplication
         :type xml: OSMWriter
         :type point: float[]
+        :return int
         """
         key = "{0}|{1}".format(point[1], point[0])
         if key not in self.nodes:
@@ -109,6 +132,22 @@ class BogotaMerger:
             self.nodes[key] = self.node_index
             self.node_index -= 1
         return self.nodes[key]
+
+    @staticmethod
+    def normalize_node_list(node_ids):
+        """
+        Normalize the node list so we don't repeat ways. Take the duplicated
+        last id off the end, then rotate the list till it starts with the
+        maximum id. Finally, restore the last element.
+        """
+        max_id = max(node_ids)
+        if node_ids[0] == max_id:
+            return node_ids
+        node_ids = node_ids[0:-1]
+        while node_ids[0] != max_id:
+            node_ids.append(node_ids.pop(0))
+        node_ids.append(node_ids[0])
+        return node_ids
 
 
 BogotaMerger().merge_building_parts(sys.argv[1], sys.argv[2])

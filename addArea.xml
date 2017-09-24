@@ -2,7 +2,7 @@
 <translations>
   <translation>
     <name>Add area</name>
-    <match type="way">
+    <match type="way,relation">
       <tag k="ConCodigo" v=".*"/>
     </match>
     <output>
