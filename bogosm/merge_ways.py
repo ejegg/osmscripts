@@ -85,13 +85,13 @@ class BogotaMerger:
             shape = shape.geoms[0]
         if len(shape.interiors) == 0:
             # simple case, just write a way
-            self.write_way(xml, shape.exterior.coords, tags)
+            self.write_way(xml, shape.exterior, tags)
         else:
             # need to write a relation
-            exterior_id = self.write_way(xml, shape.exterior.coords, {})
+            exterior_id = self.write_way(xml, shape.exterior, {})
             members = [['way', exterior_id, 'outer']]
             for inner in shape.interiors:
-                interior_id = self.write_way(xml, inner.coords, {})
+                interior_id = self.write_way(xml, inner, {})
                 members.append(['way', interior_id, 'inner'])
             xml.relation(
                 self.relation_index,
@@ -100,18 +100,21 @@ class BogotaMerger:
             )
             self.relation_index -= 1
 
-    def write_way(self, xml, coords, tags):
+    def write_way(self, xml, ring, tags):
         """
         :type xml: OSMWriter
-        :type coords: float[][]
+        :type ring: LinearRing
         :type tags: dict
         :return: int
         """
         node_ids = []
+        coords = ring.coords
         for point in coords:
             node_id = self.write_point(xml, point)
             node_ids.append(node_id)
         node_ids = self.normalize_node_list(node_ids)
+        if ring.is_ccw:
+            node_ids.reverse()
         key = ','.join(str(nid) for nid in node_ids)
         if key not in self.ways:
             xml.way(self.way_index, tags, node_ids)
