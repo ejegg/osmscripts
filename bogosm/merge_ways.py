@@ -53,8 +53,12 @@ class BogotaMerger:
                         'levels': part['levels']
                     })
                 if has_parts:
+                    # Write the shapes from smallest to largest, so if some
+                    # building part ways are also interiors of other parts,
+                    # we write the tagged way first and re-use it when we
+                    # write the relation representing the exterior part.
                     shapely_shapes.sort(
-                        key=lambda s: len(s['shape'].geoms[0].interiors) if hasattr(s['shape'].geoms[0], 'interiors') else 0
+                        key=lambda s: s['shape'].envelope.area
                     )
                     for shapely_shape in shapely_shapes:
                         self.write_shape(
@@ -66,7 +70,7 @@ class BogotaMerger:
                                 'ref:BOG:ConCodigo': k
                             }
                         )
-                # write the full building out
+                # Calculate and write out the full building.
                 max_levels = max(map(
                     lambda part: part['levels'],
                     wm.buildingParts[k]
