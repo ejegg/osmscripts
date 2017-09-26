@@ -84,7 +84,9 @@ class BogotaMerger:
         :type tags: dict
         """
         if hasattr(shape, 'geoms'):
-            shape = shape.geoms[0]
+            for sub_shape in shape.geoms:
+                self.write_shape(xml, sub_shape, tags)
+            return
         if len(shape.interiors) == 0:
             # simple case, just write a way
             self.write_way(xml, shape.exterior, tags)
@@ -95,6 +97,7 @@ class BogotaMerger:
             for inner in shape.interiors:
                 interior_id = self.write_way(xml, inner, {})
                 members.append(['way', interior_id, 'inner'])
+            tags['type'] = 'multipolygon'
             xml.relation(
                 self.relation_index,
                 tags,
