@@ -48,14 +48,21 @@ class BogotaMerger:
                 has_parts = (len(wm.buildingParts[k]) > 1)
                 for part in wm.buildingParts[k]:
                     shapely_shape = shapely.wkb.loads(part['shape'], hex=True)
-                    shapely_shapes.append(shapely_shape)
-                    if has_parts:
+                    shapely_shapes.append({
+                        'shape': shapely_shape,
+                        'levels': part['levels']
+                    })
+                if has_parts:
+                    shapely_shapes.sort(
+                        key=lambda s: len(s['shape'].geoms[0].interiors) if hasattr(s['shape'].geoms[0], 'interiors') else 0
+                    )
+                    for shapely_shape in shapely_shapes:
                         self.write_shape(
                             xml,
-                            shapely_shape,
+                            shapely_shape['shape'],
                             {
                                 'building:part': 'yes',
-                                'building:levels': part['levels'],
+                                'building:levels': shapely_shape['levels'],
                                 'ref:BOG:ConCodigo': k
                             }
                         )
@@ -64,7 +71,9 @@ class BogotaMerger:
                     lambda part: part['levels'],
                     wm.buildingParts[k]
                 ))
-                summed = shapely.ops.cascaded_union(shapely_shapes)
+                summed = shapely.ops.cascaded_union(list(
+                    shapely_shape['shape'] for shapely_shape in shapely_shapes
+                ))
                 self.write_shape(
                     xml,
                     summed,
