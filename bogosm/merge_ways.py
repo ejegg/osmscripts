@@ -45,18 +45,20 @@ class BogotaMerger:
             xml = OSMWriter(fp=fp)
             for k in codigos:
                 shapely_shapes = []
+                has_parts = (len(wm.buildingParts[k]) > 1)
                 for part in wm.buildingParts[k]:
                     shapely_shape = shapely.wkb.loads(part['shape'], hex=True)
                     shapely_shapes.append(shapely_shape)
-                    self.write_shape(
-                        xml,
-                        shapely_shape,
-                        {
-                            'building:part': 'yes',
-                            'building:levels': part['levels'],
-                            'ref:BOG:ConCodigo': k
-                        }
-                    )
+                    if has_parts:
+                        self.write_shape(
+                            xml,
+                            shapely_shape,
+                            {
+                                'building:part': 'yes',
+                                'building:levels': part['levels'],
+                                'ref:BOG:ConCodigo': k
+                            }
+                        )
                 # write the full building out
                 max_levels = max(map(
                     lambda part: part['levels'],
