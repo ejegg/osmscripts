@@ -137,9 +137,7 @@ class BogotaMerger:
         for point in coords:
             node_id = self.write_point(xml, point)
             node_ids.append(node_id)
-        node_ids = self.normalize_node_list(node_ids)
-        if ring.is_ccw:
-            node_ids.reverse()
+        node_ids = self.normalize_node_list(node_ids, ring.is_ccw)
         key = ','.join(str(nid) for nid in node_ids)
         if key not in self.ways:
             xml.way(self.way_index, tags, node_ids)
@@ -162,12 +160,15 @@ class BogotaMerger:
         return self.nodes[key]
 
     @staticmethod
-    def normalize_node_list(node_ids):
+    def normalize_node_list(node_ids, is_ccw):
         """
-        Normalize the node list so we don't repeat ways. Take the duplicated
-        last id off the end, then rotate the list till it starts with the
-        maximum id. Finally, restore the last element.
+        Normalize the node list so we don't repeat ways. First make it
+        clockwise. Then take the duplicated last id off the end and rotate
+        the list till it starts with the maximum id. Finally, restore the
+        last element.
         """
+        if is_ccw:
+            node_ids.reverse()
         max_id = max(node_ids)
         if node_ids[0] == max_id:
             return node_ids
